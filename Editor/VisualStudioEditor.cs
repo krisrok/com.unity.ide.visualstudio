@@ -186,7 +186,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			if (packages.Count == 0)
 				return;
 
-			var includedPackages = (packages == null) ?
+			var includedPackages = (packages == null || isEnabled == false) ?
 				Enumerable.Empty<PackageWrapper>() :
 				packages
 					.Where(p => installation.ProjectGenerator.ExcludedPackages.Contains(p.Id) == false)
