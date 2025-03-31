@@ -171,7 +171,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				{
 					_packageFilter[package.Id] = result.isEnabled;
 
-					foreach(var assembly in package.Assemblies)
+					foreach (var assembly in package.Assemblies)
 					{
 						_assemblyFilter[assembly.Id] = result.isEnabled;
 					}
@@ -195,9 +195,14 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 				var includedAssemblyCountAfter = package.Assemblies.Count(a => installation.ProjectGenerator.ExcludedAssemblies.Contains(a.Id) == false);
 
-				if(includedAssemblyCountAfter > includedAssemblyCount)
+				if (includedAssemblyCountAfter > includedAssemblyCount)
 				{
 					_packageFilter[package.Id] = true;
+					isDirty = true;
+				}
+				else if (includedAssemblyCountAfter == 0 && includedAssemblyCount > 0)
+				{
+					_packageFilter[package.Id] = false;
 					isDirty = true;
 				}
 			}
@@ -250,7 +255,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		{
 			var rect = GUILayoutUtility.GetLastRect();
 			var guiContent = new GUIContent($"{FormatAssemblyCount(includedAssemblyCount, assemblyCount)}");
-			rect.xMin += _togglePosition;
+			rect.xMin += _togglePosition + 5;
 			EditorGUI.BeginDisabledGroup(includedAssemblyCount == 0);
 			EditorGUI.LabelField(rect, guiContent, EditorStyles.miniLabel);
 			EditorGUI.EndDisabledGroup();
@@ -364,12 +369,12 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			EditorGUI.showMixedValue = false;
 			EditorGUI.EndDisabledGroup();
 
-			if(EditorGUI.EndChangeCheck())
+			if (EditorGUI.EndChangeCheck())
 			{
 				ftOptions.isEnabled = !ftOptions.isEnabled;
 			}
 			// If the toggle was not pressed we can check for clicks on the foldout's label
-			else if(ftOptions.drawFoldout)
+			else if (ftOptions.drawFoldout)
 			{
 				if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && labelRect.Contains(Event.current.mousePosition))
 				{
