@@ -111,9 +111,37 @@ namespace Microsoft.Unity.VisualStudio.Editor
 #endif
 		}
 
+		private const string _debuggingPortOffsetKeyFormat = "unity_visual_studio_debugging_port_{0}";
+		private static readonly string _debuggingPortOffsetKey = string.Format(_debuggingPortOffsetKeyFormat, PlayerSettings.productGUID);
+
+		private static int? _debuggingPortOffset;
+		internal static int DebuggingPortOffset
+		{
+			get
+			{
+				if (_debuggingPortOffset == null)
+				{
+					_debuggingPortOffset = EditorPrefs.GetInt(_debuggingPortOffsetKey, 56000);
+				}
+
+				return _debuggingPortOffset.Value;
+			}
+
+			set
+			{
+				if (_debuggingPortOffset == value)
+					return;
+
+				_debuggingPortOffset = value;
+				EditorPrefs.SetInt(_debuggingPortOffsetKey, value);
+			}
+		}
+
 		private static int DebuggingPort()
 		{
-			return 56000 + (System.Diagnostics.Process.GetCurrentProcess().Id % 1000);
+			var debuggingPort = DebuggingPortOffset + (System.Diagnostics.Process.GetCurrentProcess().Id % 1000);
+			//Debug.Log(debuggingPort);
+			return debuggingPort;
 		}
 
 		private static int MessagingPort()
@@ -123,6 +151,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static void ReceiveMessage(object sender, MessageEventArgs args)
 		{
+			Debug.Log("MESSAGE: " + args.Message.Value);
 			OnMessage(args.Message);
 		}
 

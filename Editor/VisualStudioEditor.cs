@@ -163,6 +163,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			EditorGUILayout.EndHorizontal();
 
 			EditorGUI.indentLevel--;
+
+			EditorGUILayout.Space();
+			VisualStudioIntegration.DebuggingPortOffset = EditorGUILayout.IntField("Debugging port offset", VisualStudioIntegration.DebuggingPortOffset);
 		}
 
 		private static void RegenerateProjectFiles(IVisualStudioInstallation installation)
