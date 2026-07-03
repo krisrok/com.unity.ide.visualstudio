@@ -59,35 +59,6 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			});
 
 			EditorApplication.update += OnUpdate;
-
-			CheckLegacyAssemblies();
-		}
-
-		private static void CheckLegacyAssemblies()
-		{
-			var checkList = new HashSet<string>(new[] { KnownAssemblies.UnityVS, KnownAssemblies.Messaging, KnownAssemblies.Bridge });
-
-			try
-			{
-				var assemblies = AppDomain
-					.CurrentDomain
-					.GetAssemblies()
-					.Where(a => checkList.Contains(a.GetName().Name));
-
-				foreach (var assembly in assemblies)
-				{
-					// for now we only want to warn against local assemblies, do not check externals.
-					var relativePath = FileUtility.MakeRelativeToProjectPath(assembly.Location);
-					if (relativePath == null)
-						continue;
-
-					Debug.LogWarning($"Project contains legacy assembly that could interfere with the Visual Studio Package. You should delete {relativePath}");
-				}
-			}
-			catch (Exception)
-			{
-				// abandon legacy check
-			}
 		}
 
 		private static void RunOnceOnUpdate(Action action)
@@ -105,10 +76,9 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		private static void RunOnShutdown(Action action)
 		{
-			// Mono on OSX has all kinds of quirks on AppDomain shutdown
-#if UNITY_EDITOR_WIN
-			AppDomain.CurrentDomain.DomainUnload += (_, __) => action();
-#endif
+#pragma warning disable UAC0006
+		AppDomain.CurrentDomain.DomainUnload += (_, __) => action();
+#pragma warning restore UAC0006
 		}
 
 		private static int DebuggingPort()
@@ -193,7 +163,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 					// Not used anymore
 					break;
 				case MessageType.ProjectPath:
-					Answer(message, MessageType.ProjectPath, Path.GetFullPath(Path.Combine(Application.dataPath, "..")));
+					Answer(message, MessageType.ProjectPath, FileUtility.GetAbsolutePath(Path.Combine(Application.dataPath, "..")));
 					break;
 				case MessageType.ExecuteTests:
 					TestRunnerApiListener.ExecuteTests(message.Value);
@@ -233,10 +203,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return package.version;
 		}
 
+		// Taken from UnityEditor
+		internal enum AssetPipelineAutoRefreshMode { Disabled = 0, Enabled = 1, EnabledOutsidePlaymode = 2 }
+
 		private static void Refresh()
 		{
 			// If the user disabled auto-refresh in Unity, do not try to force refresh the Asset database
-			if (!EditorPrefs.GetBool("kAutoRefresh", true))
+			var legacySetting = EditorPrefs.GetBool("kAutoRefresh");
+			var setting = (AssetPipelineAutoRefreshMode) EditorPrefs.GetInt("kAutoRefreshMode", Convert.ToInt32(legacySetting));
+
+			if (setting == AssetPipelineAutoRefreshMode.Disabled)
+				return;
+
+			if (setting == AssetPipelineAutoRefreshMode.EnabledOutsidePlaymode && Application.isPlaying)
 				return;
 
 			if (UnityInstallation.IsInSafeMode)

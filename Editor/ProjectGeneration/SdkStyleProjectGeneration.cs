@@ -4,7 +4,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEditor.Compilation;
@@ -32,7 +32,8 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		internal static readonly string[] SupportedCapabilities = new string[]
 		{
-			"Unity",
+			"Unity",                               // Allows to load the VSTU package and activate Unity specific features
+			"EnableOnDemandExcludedFolderLoading", // Lazy-load excluded folders in VS (useful for huge projects with many side assets)
 		};
 
 		internal static readonly string[] UnsupportedCapabilities = new string[]
@@ -121,6 +122,36 @@ namespace Microsoft.Unity.VisualStudio.Editor
 				footerBuilder.Append($@"    <ProjectCapability {attribute}=""{capability}"" />").Append(k_WindowsNewline);
 			}
 			footerBuilder.Append(@"  </ItemGroup>").Append(k_WindowsNewline);
+		}
+
+		internal override string SolutionFileImpl()
+		{
+			return base.SolutionFileImpl() + "x";
+		}
+
+		internal override string SolutionText(IEnumerable<Assembly> assemblies, Solution previousSolution = null)
+		{
+			var projects = GetSolutionProjects(assemblies, previousSolution);
+
+			var content = new StringBuilder();
+			content.Append("<Solution>").Append(k_WindowsNewline);
+
+			foreach (var project in projects)
+			{
+				content.Append("  ").Append("<Project Path=\"").Append(project.FileName).Append("\" />").Append(k_WindowsNewline);
+			}
+
+			content.Append("</Solution>").Append(k_WindowsNewline);
+
+			return content.ToString();
+		}
+
+		internal override void SyncSolution(IEnumerable<Assembly> assemblies)
+		{
+			// make sure we can't have sln and slnx solutions at the same time.
+			FileUtility.SafeDelete(base.SolutionFileImpl());
+
+			base.SyncSolution(assemblies);
 		}
 	}
 }

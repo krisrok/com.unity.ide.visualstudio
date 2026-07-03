@@ -52,7 +52,7 @@ namespace Microsoft.Unity.VisualStudio.Editor
 
 		protected static string[] GetAnalyzers(string path)
 		{
-			var analyzersDirectory = IOPath.GetFullPath(IOPath.Combine(path, "Analyzers"));
+			var analyzersDirectory = FileUtility.GetAbsolutePath(IOPath.Combine(path, "Analyzers"));
 
 			if (Directory.Exists(analyzersDirectory))
 				return Directory.GetFiles(analyzersDirectory, "*Analyzers.dll", SearchOption.AllDirectories);

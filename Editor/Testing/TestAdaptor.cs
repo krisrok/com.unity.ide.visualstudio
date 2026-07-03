@@ -1,6 +1,9 @@
 ﻿using System;
 
 using UnityEditor.TestTools.TestRunner.Api;
+#if UNITY_6000_5_OR_NEWER
+using UnityEngine;
+#endif
 
 namespace Microsoft.Unity.VisualStudio.Editor.Testing
 {
@@ -31,7 +34,11 @@ namespace Microsoft.Unity.VisualStudio.Editor.Testing
 
 			Type = testAdaptor.TypeInfo?.FullName;
 			Method = testAdaptor.Method?.Name;
+#if UNITY_6000_5_OR_NEWER
+			Assembly = testAdaptor.TypeInfo?.Assembly?.GetLoadedAssemblyPath();
+#else
 			Assembly = testAdaptor.TypeInfo?.Assembly?.Location;
+#endif
 
 			Parent = parent;
 		}

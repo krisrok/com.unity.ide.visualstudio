@@ -14,16 +14,27 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public const char WinSeparator = '\\';
 		public const char UnixSeparator = '/';
 
+		public static string GetAbsolutePath(string path)
+		{
+#if UNITY_6000_5_OR_NEWER
+			return UnityEditor.FileUtil
+				.PathToAbsolutePath(path)
+				.NormalizePathSeparators();
+#else
+			return Path.GetFullPath(path);
+#endif
+		}
+
 		public static string GetPackageAssetFullPath(params string[] components)
 		{
 			// Unity has special IO handling of Packages and will resolve those path to the right package location
-			return Path.GetFullPath(Path.Combine("Packages", "com.unity.ide.visualstudio", Path.Combine(components)));
+			return GetAbsolutePath(Path.Combine("Packages", "com.unity.ide.visualstudio", Path.Combine(components)));
 		}
 
 		public static string GetAssetFullPath(string asset)
 		{
-			var basePath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-			return Path.GetFullPath(Path.Combine(basePath, NormalizePathSeparators(asset)));
+			var basePath = GetAbsolutePath(Path.Combine(Application.dataPath, ".."));
+			return GetAbsolutePath(Path.Combine(basePath, NormalizePathSeparators(asset)));
 		}
 
 		public static string NormalizePathSeparators(this string path)
@@ -59,13 +70,13 @@ namespace Microsoft.Unity.VisualStudio.Editor
 		public static string MakeAbsolutePath(this string path)
 		{
 			if (string.IsNullOrEmpty(path)) { return string.Empty; }
-			return Path.IsPathRooted(path) ? path : Path.GetFullPath(path);
+			return Path.IsPathRooted(path) ? path : GetAbsolutePath(path);
 		}
 		
 		// returns null if outside of the project scope
 		internal static string MakeRelativeToProjectPath(string fileName)
 		{
-			var basePath = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+			var basePath = GetAbsolutePath(Path.Combine(Application.dataPath, ".."));
 			fileName = NormalizePathSeparators(fileName);
 
 			if (!Path.IsPathRooted(fileName))
@@ -77,6 +88,19 @@ namespace Microsoft.Unity.VisualStudio.Editor
 			return fileName
 				.Substring(basePath.Length)
 				.Trim(Path.DirectorySeparatorChar);
+		}
+
+		internal static void SafeDelete(string file)
+		{
+			try
+			{
+				if (File.Exists(file))
+					File.Delete(file);
+			}
+			catch (IOException)
+			{
+				// ignore
+			}
 		}
 	}
 }
